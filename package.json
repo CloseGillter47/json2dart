@@ -1,7 +1,7 @@
 {
   "name": "json2dart",
   "displayName": "json2dart",
-  "description": "pass json file to dart model class ",
+  "description": "pass json file to dart model class",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.46.0"
@@ -10,7 +10,8 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:json2dart.demo"
+    "onCommand:json2dart.demo",
+    "onCommand:json2dart.update"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -18,6 +19,10 @@
       {
         "command": "json2dart.demo",
         "title": "json2dart demo"
+      },
+      {
+        "command": "json2dart.update",
+        "title": "json2dart update"
       }
     ]
   },

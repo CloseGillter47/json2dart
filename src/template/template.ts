@@ -2,15 +2,21 @@
 
 export const JSON_DEMO = {
   // * 双下划线开头为配置变量
+
   // * 配置限定属性 忽略该json文件不转换
-  "__": true,
+  "__": "__import:demo.dart;__toJSON:toString;__ignore:auto;__SQLite:false;",
+
   // * 自定义类导入
   "__import": "demo.dart",
+
   // * 自定义json输出方法 json 序列化会用到
   "__toJSON": "toString",
 
   // * 是否生成 SQLite 语句
   "__SQLite": false,
+
+  /** 命令执行时是否忽略该文件 */
+  "__ignore": "auto",
 
   // 单下划线开头的变量忽略不输出
   "_ignore": null,
@@ -33,7 +39,7 @@ export const JSON_DEMO = {
   // $ 为解析字符 这里会解析后面的类型, 这里是 dynamic
   "prop5": "$dynamic",
 
-  // 系统内内置类型 DateTime 
+  // 系统内置类型 DateTime 
   "prop6": "$DateTime",
 
   // 自定义类型必须用 $开头
@@ -42,9 +48,17 @@ export const JSON_DEMO = {
   // 数组类型
   "prop8": "[]$dynamic",
 
-  // 支持多个配置，分号【;】分割，
+  // 支持多个配置，分号【;】分割，格式：配置:属性;
+  // 目前支持以下几个，后面看需求再陆续扩展
   // import 自定义该类的导入文件
   // cast 数组专用 自动转换类型
   // json 序列化的来源方法 默认是 [toJson]
-  "prop9": "[]$Model;import:./models/demo.dart;cast:$String;json:toString",
+  "prop9": "[]$Model;import:./models/demo.dart;json:toString",
 };
+
+export const TEMP_DART_HEAD = `//////////////////////////////////////////////////////////////////
+///
+/// vscode插件自动生成的代码，请勿手动修改，以免丢失编辑内容
+///
+//////////////////////////////////////////////////////////////////
+`;

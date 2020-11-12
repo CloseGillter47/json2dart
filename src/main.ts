@@ -4,6 +4,11 @@ import { FileOS, Sfile } from "./fs";
 import { Toast } from "./vscode";
 import { DEFAULT_CONFIG } from './const';
 import { sort2String, sortObjectProps } from './utils';
+import { KeyMaps, TEMP_CUS_PROP_FROM_JSON, TEMP_DART_CLASS, TEMP_DART_HEAD, TEMP_IMPORT_CLASS, TEMP_LIST_CUS_PROP_FROM_JSON, TEMP_LIST_SYS_PROP_FROM_JSON, TEMP_PROP, TEMP_PROP_INIT, TEMP_PROP_LIST, TEMP_SYS_PROP_FROM_JSON } from './template/template';
+
+String.prototype.replaceAll = String.prototype.replaceAll || function (this: string, r: string, s: string) {
+  return this.replace(new RegExp(r, 'g'), s);
+};
 
 export class Json2Dart {
   constructor () {
@@ -65,20 +70,48 @@ export class Json2Dart {
     const files: (Sfile & Cfile)[] = await listAllJSON(input);
     const pascal = this._config?.json2dart?.pascal_case_class || true;
     const camel = this._config?.json2dart?.camel_case_fields || true;
+
+    let prefix: string;
+    let suffix: string;
+
+    if (this._config?.json2dart?.prefix) {
+      prefix = this._config.json2dart.prefix.replace(/[^a-zA-Z0-9]+/g, '');
+      if (/[0-9]/.test(prefix.charAt(0))) prefix = prefix.slice(1);
+    }
+
+    if (this._config?.json2dart?.suffix) {
+      suffix = this._config.json2dart.suffix.replace(/[^a-zA-Z0-9]+/g, '');
+    }
+
     files.forEach((file) => {
+      file.dart = (this._config?.json2dart?.output ?? '') + '/' + file.name + '.dart';
       file.class = file.name;
+
+      if (prefix) { file.class = `${prefix}_${file.class}`; }
+      if (suffix) { file.class = `${file.class}_${suffix}`; }
+
       file.camel_case_fields = camel;
       file.pascal_case_class = pascal;
 
       if (pascal) {
-        const words = file.name.split(/[^a-zA-Z]+/);
+        const words = file.class.split(/[^a-zA-Z]+/);
         // 转换大驼峰命名
         const name = words.map(([f, ...o]) => f.toUpperCase() + o.join('')).join('');
         file.class = name;
       }
     });
 
-    await paseJson2Dart(files);
+    const libs = await paseJson2Dart(files);
+
+    await buildDartCodeFromConf(libs, async (f, data) => {
+      const file = FileOS.combinePath(this._root, f);
+      const folder = FileOS.dirname(file);
+
+      FileOS.createFolderAsync(folder, this._root);
+      await FileOS.writeFileAsync(file, data);
+    });
+
+    Toast.message('已完成 json 转换 model');
   }
 
 
@@ -94,8 +127,8 @@ export class Json2Dart {
    * update
    */
   public async update () {
-    const config = await this._readProjectConfig();
-    if (!config || !config.json2dart) return;
+    this._config = await this._readProjectConfig();
+    if (!this._config || !this._config.json2dart) return;
     await this._build();
   }
 }
@@ -127,10 +160,13 @@ interface Jdart {
   __SQLite?: boolean;
   __ignore?: boolean | 'auto';
 
+  __fromJSON?: string;
+
   [key: string]: any;
 }
 
 interface Cfile {
+  dart?: string;
   class?: string;
   pascal_case_class?: boolean;
   camel_case_fields?: boolean;
@@ -139,18 +175,21 @@ interface Cfile {
 interface Jfile extends Cfile {
   ___file?: string;
   ___path?: string;
+  ___dart?: string;
 
   ___import?: string;
   ___toJSON?: string;
   ___SQLite?: boolean;
   ___ignore?: boolean | 'auto';
+  ___fromJSON?: string;
 
   ___fields?: DartProp[];
 
 }
 
 
-async function paseJson2Dart (files: (Sfile & Cfile)[] = []) {
+/** 将文件配置解析为代码生成配置 */
+async function paseJson2Dart (files: (Sfile & Cfile)[] = []): Promise<Jfile[]> {
   const configs: Jfile[] = [];
 
   for await (const file of files) {
@@ -167,6 +206,7 @@ async function paseJson2Dart (files: (Sfile & Cfile)[] = []) {
     if (jdart && !Array.isArray(jdart) && Object.keys(jdart).length) {
 
       const config: Jfile = {
+        ___dart: file.dart,
         ___file: file.name,
         ___path: file.path,
 
@@ -191,7 +231,8 @@ async function paseJson2Dart (files: (Sfile & Cfile)[] = []) {
       }
 
       config.___ignore = jdart.__ignore;
-
+      config.___toJSON = jdart.__toJSON || 'toJSON';
+      config.___fromJSON = jdart.__fromJSON || 'fromJSON';
 
       // 获取所有有效属性
       const props = Object.keys(jdart).filter((k) => k && !k.startsWith('_')).sort(sort2String);
@@ -201,6 +242,7 @@ async function paseJson2Dart (files: (Sfile & Cfile)[] = []) {
         const field: DartProp = {
           prop,
           name: prop,
+          from: '',
           type: DartTypes.dynamic,
           import: '',
           isModel: false,
@@ -253,6 +295,10 @@ async function paseJson2Dart (files: (Sfile & Cfile)[] = []) {
 
         }
 
+        if (field.isModel) {
+          field.from = field.from || 'fromJSON';
+        }
+
         // 小驼峰属性
         if (file.camel_case_fields) {
           const words = field.name.split(/[^a-zA-Z]+/);
@@ -262,13 +308,122 @@ async function paseJson2Dart (files: (Sfile & Cfile)[] = []) {
         fields.push(field);
       }
 
-      config.___fields = fields;
+      config.___fields = fields.sort((a, b) => (a.isList as any) ^ 0 - (b.isList as any) ^ 0);
 
       configs.push(config);
     }
   }
 
-  console.log({ configs });
+  // 再遍历一遍，补全自定义属性的导入头
+  for (const config of configs) {
+    for (const field of config.___fields ?? []) {
+      // 自定义属性
+      if (field.isModel) {
+        // 类型和自己的类名相同
+        if (field.type === config.class) {
+          field.json = config.___toJSON;
+        } else {
+          // 在当前库中查找对应的类
+          const tar = configs.find((c) => c.class === field.type);
+          if (tar && tar.___dart && config.___dart) {
+            field.import = fileImportPath(config.___dart, tar.___dart);
+          }
+        }
+      }
+    }
+  }
+
+  return configs;
+}
+
+type fileCallback = (file: string, buffer: string) => Promise<void>;
+
+/** 根据配置生成具体代码 */
+async function buildDartCodeFromConf (libs: Jfile[], cb: fileCallback) {
+
+  for await (const lib of libs) {
+
+    let buffer: string = TEMP_DART_CLASS;
+    // 类属性
+    const props: string[] = [];
+    // 导入头文件
+    const imports: string[] = [];
+    // 构造属性
+    const init_props: string[] = [];
+    // json赋值
+    const props_maps: string[] = [];
+
+    for (const field of lib.___fields ?? []) {
+      // 自定义属性需要导入头文件
+      if (field.isModel && field.import) {
+        imports.push(
+          TEMP_IMPORT_CLASS.replaceAll(KeyMaps.dart_file, field.import),
+        );
+      }
+
+      props.push(
+        (field.isList ? TEMP_PROP_LIST : TEMP_PROP)
+          .replaceAll(KeyMaps.prop_type, field?.type || '')
+          .replaceAll(KeyMaps.dart_prop, field?.prop || '')
+      );
+
+      init_props.push(
+        TEMP_PROP_INIT.replaceAll(KeyMaps.dart_prop, field?.prop ?? '')
+      );
+
+      const formJson = !field.isList
+        ? field.isModel ? TEMP_CUS_PROP_FROM_JSON : TEMP_SYS_PROP_FROM_JSON
+        : field.isModel ? TEMP_LIST_CUS_PROP_FROM_JSON : TEMP_LIST_SYS_PROP_FROM_JSON;
+
+      props_maps.push(
+        formJson
+          .replaceAll(KeyMaps.dart_prop, field?.prop || '')
+          .replaceAll(KeyMaps.json_prop, field?.name || '')
+          .replaceAll(KeyMaps.prop_type, field?.type || '')
+          .replaceAll(KeyMaps.from_json, field?.from || '')
+      );
+    }
+
+    // imports 需要去重
+    let import_data = Array.from(new Set(imports)).join('\n');
+
+    const props_data = props.join('\n');
+
+    const init_data = init_props.join('\n');
+
+    const json_data = props_maps.join('\n');
+
+
+    buffer = buffer
+      .replaceAll(KeyMaps.props_init, init_data)
+      .replaceAll(KeyMaps.props_list, props_data)
+      .replaceAll(KeyMaps.class_name, lib?.class || '')
+      .replaceAll(KeyMaps.from_json, lib?.___fromJSON || '')
+      .replaceAll(KeyMaps.dart_from_json, json_data);
+
+    // buffer = TEMP_DART_HEAD + import_data + buffer;
+    if (import_data) {
+      import_data += '\n\n';
+    }
+
+    buffer = import_data + buffer;
+
+    await cb(lib?.___dart ?? '', buffer);
+  }
+}
+
+
+function fileImportPath (from: string, to: string): string {
+  let res: string = '';
+  if (from && to) {
+    res = FileOS.relative(from, to);
+    const f = FileOS.dirname(res);
+    if (f === '..') {
+      res = FileOS.basename(to);
+    }
+  }
+
+  return res;
 }
 
 const DartTypes: IDartTypes = {

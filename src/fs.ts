@@ -34,6 +34,18 @@ export class FileOS {
     return paths ? Path.resolve(...paths) : '';
   }
 
+  public static relative (from: string, to: string): string {
+    return Path.relative(from, to);
+  }
+
+  public static basename (file: string): string {
+    return file ? Path.basename(file) : '';
+  }
+
+  public static dirname (file: string): string {
+    return file ? Path.dirname(file) : '';
+  }
+
   /**
    * existsFileAsync
    */

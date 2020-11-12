@@ -29,3 +29,7 @@ interface JsonConfig {
   /** 生成 Model 的后缀 如：UserModel */
   suffix?: string;
 }
+
+interface String {
+  replaceAll (searchValue: string, replaceValue: string): string;
+}

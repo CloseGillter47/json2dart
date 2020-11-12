@@ -60,5 +60,61 @@ export const TEMP_DART_HEAD = `/////////////////////////////////////////////////
 ///
 /// vscode插件自动生成的代码，请勿手动修改，以免丢失编辑内容
 ///
-//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////\n
 `;
+
+export const KeyMaps = {
+  prop_type: '%PROP_TYPE',
+  dart_prop: '%DART_PROP',
+  json_prop: '%JSON_PROP',
+  dart_file: '%DART_FILE',
+  class_name: '%CLASS_NAME',
+  props_init: '%PROPS_INIT',
+  props_list: '%PROPS_LIST',
+  from_json: '%FROM_JSON',
+  to_json: '%TO_JSON',
+  dart_from_json: '%DART_FROM_JSON',
+
+};
+
+export const TEMP_DART_CLASS = `class ${KeyMaps.class_name} {
+${KeyMaps.props_list}
+
+  ${KeyMaps.class_name}({
+${KeyMaps.props_init}
+  });
+
+  ${KeyMaps.class_name}.${KeyMaps.from_json}(Map json) {
+${KeyMaps.dart_from_json}
+  }
+}
+`;
+
+export const TEMP_IMPORT_CLASS = `import '${KeyMaps.dart_file}';`;
+
+export const TEMP_PROP = `\t${KeyMaps.prop_type} ${KeyMaps.dart_prop};`;
+
+
+export const TEMP_PROP_LIST = `\tList<${KeyMaps.prop_type}> ${KeyMaps.dart_prop};`;
+
+export const TEMP_PROP_INIT = `\t\tthis.${KeyMaps.dart_prop},`;
+
+export const TEMP_SYS_PROP_FROM_JSON = `\t\t${KeyMaps.dart_prop} = json['${KeyMaps.json_prop}'];\n`;
+
+export const TEMP_CUS_PROP_FROM_JSON = `
+    if (json['${KeyMaps.json_prop}'] != null) {
+      ${KeyMaps.dart_prop} = ${KeyMaps.prop_type}.${KeyMaps.from_json}(json['${KeyMaps.json_prop}']);
+    }
+`.trimEnd();
+
+export const TEMP_LIST_SYS_PROP_FROM_JSON = `
+    if (json['${KeyMaps.json_prop}'] != null && json['${KeyMaps.json_prop}'] is List) {
+      ${KeyMaps.dart_prop} = (json['${KeyMaps.json_prop}'] as List).cast<${KeyMaps.prop_type}>();
+    }
+`.trimEnd();
+
+export const TEMP_LIST_CUS_PROP_FROM_JSON = `
+    if (json['${KeyMaps.json_prop}'] != null && json['${KeyMaps.json_prop}'] is List) {
+      ${KeyMaps.dart_prop} = (json['${KeyMaps.json_prop}'] as List).map((e) => ${KeyMaps.prop_type}.${KeyMaps.from_json}(e)).toList();
+    }
+`.trimEnd();

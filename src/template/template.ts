@@ -115,6 +115,6 @@ export const TEMP_LIST_SYS_PROP_FROM_JSON = `
 
 export const TEMP_LIST_CUS_PROP_FROM_JSON = `
     if (json['${KeyMaps.json_prop}'] != null && json['${KeyMaps.json_prop}'] is List) {
-      ${KeyMaps.dart_prop} = (json['${KeyMaps.json_prop}'] as List).map((e) => ${KeyMaps.prop_type}.${KeyMaps.from_json}(e)).toList();
+      ${KeyMaps.dart_prop} = (json['${KeyMaps.json_prop}'] as List<Map<String, dynamic>>).map<${KeyMaps.prop_type}>((Map<String, dynamic> e) => ${KeyMaps.prop_type}.${KeyMaps.from_json}(e)).toList();
     }
 `.trimEnd();

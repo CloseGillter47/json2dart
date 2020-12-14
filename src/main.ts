@@ -396,10 +396,11 @@ async function buildDartCodeFromConf (libs: Jfile[], cb: fileCallback) {
 
     buffer = buffer
       .replaceAll(KeyMaps.props_init, init_data)
-      .replaceAll(KeyMaps.props_list, props_data)
       .replaceAll(KeyMaps.class_name, lib?.class || '')
       .replaceAll(KeyMaps.from_json, lib?.___fromJSON || '')
-      .replaceAll(KeyMaps.dart_from_json, json_data);
+      .replaceAll(KeyMaps.dart_from_json, json_data)
+      .replaceAll(KeyMaps.props_list, props_data)
+      ;
 
     // buffer = TEMP_DART_HEAD + import_data + buffer;
     if (import_data) {

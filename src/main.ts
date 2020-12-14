@@ -312,6 +312,16 @@ async function paseJson2Dart (files: (Sfile & Cfile)[] = []): Promise<Jfile[]> {
 
       configs.push(config);
     }
+
+    // 更新原[json]文件
+    if (jdart?.__ignore === 'auto') {
+      const newdata = data
+        .replaceAll('"__ignore":"auto"', '"__ignore": true')
+        .replaceAll('"__ignore": "auto"', '"__ignore": true')
+        .replaceAll('__ignore:auto', '__ignore:true');
+
+      await FileOS.writeFileAsync(file.path, newdata);
+    }
   }
 
   // 再遍历一遍，补全自定义属性的导入头
@@ -342,6 +352,8 @@ type fileCallback = (file: string, buffer: string) => Promise<void>;
 async function buildDartCodeFromConf (libs: Jfile[], cb: fileCallback) {
 
   for await (const lib of libs) {
+    // 是否忽略该文件
+    if (lib.___ignore === true) continue;
 
     let buffer: string = TEMP_DART_CLASS;
     // 类属性
@@ -396,11 +408,10 @@ async function buildDartCodeFromConf (libs: Jfile[], cb: fileCallback) {
 
     buffer = buffer
       .replaceAll(KeyMaps.props_init, init_data)
+      .replaceAll(KeyMaps.props_list, props_data)
       .replaceAll(KeyMaps.class_name, lib?.class || '')
       .replaceAll(KeyMaps.from_json, lib?.___fromJSON || '')
-      .replaceAll(KeyMaps.dart_from_json, json_data)
-      .replaceAll(KeyMaps.props_list, props_data)
-      ;
+      .replaceAll(KeyMaps.dart_from_json, json_data);
 
     // buffer = TEMP_DART_HEAD + import_data + buffer;
     if (import_data) {

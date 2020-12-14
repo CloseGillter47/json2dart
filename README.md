@@ -1,4 +1,4 @@
-# json2dart README
+# json2dart 可以将JSON报文生成 Dart Model
 
 将 JSON 文件生成 Dart 中的 Model 类
 
@@ -6,63 +6,96 @@
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+首次运行需要先执行初始化命令 ` json2dart demo` ，这个命令主要作用是生成插件的配置文件`iproject.yaml`
 
-For example if there is an image subfolder under your extension project workspace:
+```yaml
+json2dart:
+  json: json									# json文件存放位置
+  output: lib/plugins/models	# dart文件输出位置
+  pascal_case_class: true			# 大驼峰的类名
+  camel_case_fields: true			# 小驼峰的属性名
+```
 
-\!\[feature X\]\(images/feature-x.png\)
+如果需要修改默认值，请修改项目根目录（你运行该命令的根目录）下面的`iproject.yaml`
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+之后在你的json文件存放位置放入json文件，json文件可以参考下面的例子
+
+> 正常用可以忽略下面的配置，下面属于高级一点用法
+
+```json
+	{
+  // * 双下划线开头为配置变量
+
+  // * 统一配置，可以将下面的命令用一条来表示，【;】分割
+  "__": "__import:demo.dart;__toJSON:toString;__ignore:auto;",
+
+  // * 自定义类导入【非该插件生成的类】
+  "__import": "demo.dart",
+
+  // * 自定义json输出方法 json 序列化会用到
+  "__toJSON": "toString",
+
+  /** 命令执行时是否忽略该文件 */
+  "__ignore": "auto",
+
+  // 单下划线开头的变量忽略不输出
+  "_ignore": null,
+
+  // 无法解析的值默认类型为 dynamic
+  "prop0": null,
+
+  // 这是 num 类型
+  "prop1": 1,
+
+  // 这是 double 类型
+  "prop2": 1.0,
+
+  // 这是bool 类型
+  "prop3": false,
+
+  // 这是字符串类型
+  "prop4": "dynamic",
+
+  // $ 为解析字符 这里会解析后面的类型, 这里是 dynamic
+  "prop5": "$dynamic",
+
+  // 自定义类型必须用 $开头
+  "prop7": "$Model",
+
+  // 数组类型
+  "prop8": "[]$dynamic",
+
+  // 支持多个配置，分号【;】分割，格式：配置:属性;
+  // 目前支持以下几个，后面看需求再陆续扩展
+  // import 自定义该类的导入文件
+  // cast 数组专用 自动转换类型
+  // json 序列化的来源方法 默认是 [toJson]
+  "prop9": "[]$Model;import:./models/demo.dart;json:toString",
+}
+```
+
+将您的文件放好后运行命令`json2dart update` 即可在输出文件夹下找到生成的dart代码文件
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+VScode 编辑器
 
-## Extension Settings
+## Extension Commands
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+目前有一下两个命令
 
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something
+* `json2dart demo`: 初始化配置文件
+* ` json2dart update`: 通过json文件夹下的json文件来更新生成的dart代码
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+1. 生成 SQLite命令还未完成...
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+通过一个vscode命令就可以生成dart model 代码
 
-### 1.0.0
+### 0.0.1
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
------------------------------------------------------------------------------------------------------------
-
-## Working with Markdown
-
-**Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (macOS) to see a list of Markdown snippets
-
-### For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+1. json转dart Model
 

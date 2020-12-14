@@ -78,8 +78,6 @@ export const KeyMaps = {
 };
 
 export const TEMP_DART_CLASS = `class ${KeyMaps.class_name} {
-${KeyMaps.props_list}
-
   ${KeyMaps.class_name}({
 ${KeyMaps.props_init}
   });
@@ -87,6 +85,8 @@ ${KeyMaps.props_init}
   ${KeyMaps.class_name}.${KeyMaps.from_json}(Map json) {
 ${KeyMaps.dart_from_json}
   }
+
+${KeyMaps.props_list}
 }
 `;
 
@@ -113,8 +113,7 @@ export const TEMP_LIST_SYS_PROP_FROM_JSON = `
     }
 `.trimEnd();
 
-export const TEMP_LIST_CUS_PROP_FROM_JSON = `
-    if (json['${KeyMaps.json_prop}'] != null && json['${KeyMaps.json_prop}'] is List) {
+export const TEMP_LIST_CUS_PROP_FROM_JSON = `\t\tif (json['${KeyMaps.json_prop}'] != null && json['${KeyMaps.json_prop}'] is List) {
       ${KeyMaps.dart_prop} = (json['${KeyMaps.json_prop}'] as List<Map<String, dynamic>>).map<${KeyMaps.prop_type}>((Map<String, dynamic> e) => ${KeyMaps.prop_type}.${KeyMaps.from_json}(e)).toList();
     }
 `.trimEnd();
